@@ -1,0 +1,190 @@
+name: AI見積もり
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  estimate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Estimate with AI
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # リトライ設定を追加
+          retries: 3
+          script: |
+            try {
+              const issueBody = context.payload.issue.body || '';
+              const issueTitle = context.payload.issue.title || '';
+              
+              // 入力検証
+              if (!issueTitle.trim() && !issueBody.trim()) {
+                console.log('Issue title and body are both empty, skipping estimation');
+                return;
+              }
+              
+              // 必要な環境変数の検証
+              const requiredSecrets = ['${{ secrets.AZURE_OPENAI_ENDPOINT }}', '${{ secrets.AZURE_OPENAI_API_KEY }}'];
+              if (!requiredSecrets[0] || !requiredSecrets[1]) {
+                throw new Error('Required Azure OpenAI secrets are not configured');
+              }
+              
+              // 環境変数からプロンプトを取得
+              const defaultPrompt = 'あなたは経験豊富なWEBエンジニアです。以下のissueを技術的な観点で分析し、実装に必要な工数をJSON形式で見積もってください。\n\n出力形式:\n{\n  "estimateHours": 見積もり時間（数値）,\n  "rationale": "技術的な実装難易度、必要な調査・設計時間、コーディング時間、テスト時間などの根拠",\n  "risks": ["技術的リスクや実装上の課題"],\n  "complexity": "low/medium/high",\n  "confidence": "low/medium/high"\n}\n\nタイトル: {{title}}\n\n内容: {{body}}';
+              
+              const promptTemplate = process.env.ESTIMATION_PROMPT || defaultPrompt;
+              
+              const prompt = promptTemplate
+                .replace('{{title}}', issueTitle)
+                .replace('{{body}}', issueBody);
+              
+              // プロンプトの長さ制限（トークン制限対策）
+              const maxPromptLength = 8000;
+              const truncatedPrompt = prompt.length > maxPromptLength 
+                ? prompt.substring(0, maxPromptLength) + '...'
+                : prompt;
+              
+              console.log(`Making API request for issue #${context.issue.number}`);
+              
+              // Azure OpenAI APIを呼び出して見積もりを取得
+              const apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-01';
+              const modelName = process.env.AZURE_OPENAI_MODEL || 'gpt-4o-mini';
+              
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 30000);
+              
+              const response = await fetch('${{ secrets.AZURE_OPENAI_ENDPOINT }}?api-version=' + apiVersion, {
+                method: 'POST',
+                headers: {
+                  'api-key': '${{ secrets.AZURE_OPENAI_API_KEY }}',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  messages: [{
+                    role: 'user',
+                    content: truncatedPrompt
+                  }],
+                  max_tokens: 800,
+                  temperature: 0.1,
+                  top_p: 0.95
+                }),
+                signal: controller.signal
+              });
+              
+              clearTimeout(timeoutId);
+              
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
+                throw new Error(`Azure OpenAI API error: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              
+              if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                throw new Error('Invalid response format from Azure OpenAI API');
+              }
+              
+              const estimate = data.choices[0].message.content.trim();
+              console.log(`AI estimation result: ${estimate}`);
+              
+              // JSON形式のレスポンスをパース
+              let estimationData;
+              try {
+                // JSONブロックを抽出する処理を追加
+                const jsonMatch = estimate.match(/\{[\s\S]*\}/);
+                const jsonString = jsonMatch ? jsonMatch[0] : estimate;
+                estimationData = JSON.parse(jsonString);
+              } catch (parseError) {
+                console.log('Failed to parse JSON response, attempting to extract numeric estimate');
+                // JSONパースに失敗した場合は従来通り数値抽出を試行
+                const numericEstimate = parseFloat(estimate);
+                if (!isNaN(numericEstimate) && numericEstimate > 0) {
+                  estimationData = {
+                    estimateHours: numericEstimate,
+                    rationale: "詳細な分析結果の取得に失敗しました",
+                    risks: ["分析結果が不完全です"],
+                    complexity: "unknown",
+                    confidence: "low"
+                  };
+                } else {
+                  estimationData = null;
+                }
+              }
+              
+              let commentBody;
+              if (estimationData && estimationData.estimateHours && !isNaN(estimationData.estimateHours)) {
+                const complexityEmoji = {
+                  'low': '🟢',
+                  'medium': '🟡', 
+                  'high': '🔴',
+                  'unknown': '⚪'
+                };
+                
+                const confidenceEmoji = {
+                  'low': '📉',
+                  'medium': '📊',
+                  'high': '📈',
+                  'unknown': '❓'
+                };
+                
+                commentBody = '🤖 **AI工数見積もり結果**\n\n';
+                commentBody += '## 📊 見積もり時間\n';
+                commentBody += `**${estimationData.estimateHours}時間**\n\n`;
+                commentBody += '## 📝 見積もり根拠\n';
+                commentBody += `${estimationData.rationale || '根拠の詳細は取得できませんでした'}\n\n`;
+                commentBody += '## ⚠️ 想定リスク\n';
+                
+                if (estimationData.risks && Array.isArray(estimationData.risks) && estimationData.risks.length > 0) {
+                  estimationData.risks.forEach((risk, index) => {
+                    commentBody += `${index + 1}. ${risk}\n`;
+                  });
+                } else {
+                  commentBody += '- 特定のリスクは識別されませんでした\n';
+                }
+                
+                commentBody += '\n## 📈 分析メタ情報\n';
+                commentBody += `- **複雑度**: ${complexityEmoji[estimationData.complexity] || '⚪'} ${estimationData.complexity || 'unknown'}\n`;
+                commentBody += `- **信頼度**: ${confidenceEmoji[estimationData.confidence] || '❓'} ${estimationData.confidence || 'unknown'}\n\n`;
+                commentBody += '---\n';
+                commentBody += '*この見積もりはAIによって自動生成されました。参考程度にご利用ください。*';
+              } else {
+                commentBody = '🤖 **AI工数見積もり**: 見積もりが困難です\n\n';
+                commentBody += `結果: ${estimate}\n\n`;
+                commentBody += '*数値での見積もりが取得できませんでした。issueの内容をより詳細に記述することをお勧めします。*';
+              }
+              
+              // issueにコメントとして見積もりを追加
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: commentBody
+              });
+              
+              console.log(`Successfully added estimation comment to issue #${context.issue.number}`);
+              
+            } catch (error) {
+              console.error('Error in AI estimation workflow:', error);
+              
+              // エラー時にもコメントを追加（ただしAPIエラーでない場合のみ）
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: '🚨 **AI工数見積もりエラー**\n\n見積もりの生成中にエラーが発生しました。\n\n*管理者にお問い合わせください。*'
+                });
+              } catch (commentError) {
+                console.error('Failed to add error comment:', commentError);
+              }
+              
+              // ワークフロー自体は失敗させる
+              throw error;
+            }
+        env:
+          ESTIMATION_PROMPT: ${{ vars.ESTIMATION_PROMPT }}
+          AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
+          AZURE_OPENAI_MODEL: ${{ vars.AZURE_OPENAI_MODEL }}
