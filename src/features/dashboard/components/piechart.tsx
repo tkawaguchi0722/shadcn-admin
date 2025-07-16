@@ -1,13 +1,14 @@
 import { PieChart, ResponsiveContainer, Pie, Cell, Tooltip, Legend } from 'recharts';
 
 const data = [
-  { name: 'A社', value: 400 },
-  { name: 'B社', value: 300 },
-  { name: 'C社', value: 300 },
-  { name: 'D社', value: 200 },
+  { name: 'A社', value: 20 },
+  { name: 'B社', value: 30 },
+  { name: 'C社', value: 40 },
+  { name: 'D社', value: 10 },
 ];
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+// 値の大きい順に緑の濃度を濃くする
+const COLORS = ['#166534', '#22c55e', '#4ade80', '#86efac'];
 
 export  function SimplePieChart() {
   return (
