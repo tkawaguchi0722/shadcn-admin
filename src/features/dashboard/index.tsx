@@ -18,6 +18,7 @@ import {
   IconHeartHandshake,
 
 } from '@tabler/icons-react'
+import { SnsSuggestRankingCard } from './components/sns-suggest-ranking'
 
 export default function Dashboard() {
   return (
@@ -45,14 +46,8 @@ export default function Dashboard() {
         >
           {/* SNSサジェストランキング */}
           <TabsContent value='overview' className='space-y-4'>
-            <div className='grid grid-cols-1 gap-4 '>
-              <Card className='col-span-1 lg:col-span-1'>
-                <CardHeader>
-                  <CardTitle>SNS サジェスト ランキング</CardTitle>
-                </CardHeader>
-                <CardContent className='pl-2 h-30'>
-                </CardContent>
-              </Card>
+            <div className='grid grid-cols-1 gap-4 w-full'>
+              <SnsSuggestRankingCard />
             </div>
             {/* 参加人数 */}
             <div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
