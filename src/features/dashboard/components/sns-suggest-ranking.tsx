@@ -44,12 +44,7 @@ export function SnsSuggestRankingCard() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-1">
                 <div className="text-sm font-medium text-gray-900 line-clamp-2 flex-1 truncate">{item.title}</div>
-                <div className="w-24 h-3 bg-green-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all"
-                    style={{ width: `${item.openRate}%` }}
-                  />
-                </div>
+
                 <Badge className="bg-green-500 text-white text-xs font-bold px-2 py-0.5">
                   開封率：{item.openRate}%
                 </Badge>
