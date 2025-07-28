@@ -12,47 +12,47 @@ import {
 } from "@/components/ui/collapsible";
 import { IconHeartHandshake } from "@tabler/icons-react";
 
-interface SnsSuggestProps {
-  id: string;
-  sns: 'LINE' | 'Twitter' | 'Instagram' | 'Facebook';
-  content: string;
-  keywords: string[];
-  target: string;
-  engagementRate: number;
-  impressions: number;
-  reach: number;
-  createdAt: string;
-  expandedContent?: {
-    fullText: string;
-    reasoning: string;
-    metrics: {
-      participants: number;
-      comments: number;
-      shares: number;
-      saves: number;
-      clicks: number;
-      follows: number;
-    };
-  };
-  onSend?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
-}
+// interface SnsSuggestProps {
+//   id: string;
+//   sns: 'LINE' | 'Twitter' | 'Instagram' | 'Facebook';
+//   content: string;
+//   keywords: string[];
+//   target: string;
+//   engagementRate: number;
+//   impressions: number;
+//   reach: number;
+//   createdAt: string;
+//   expandedContent?: {
+//     fullText: string;
+//     reasoning: string;
+//     metrics: {
+//       participants: number;
+//       comments: number;
+//       shares: number;
+//       saves: number;
+//       clicks: number;
+//       follows: number;
+//     };
+//   };
+//   onSend?: (id: string) => void;
+//   onEdit?: (id: string) => void;
+//   onDelete?: (id: string) => void;
+// }
 
-interface Target {
-  id: string;
-  label: string;
-  borderColor: string;
-}
+// interface Target {
+//   id: string;
+//   label: string;
+//   borderColor: string;
+// }
 
-const targets: Target[] = [
-  { id: 'executive', label: '経営者・役員', borderColor: 'border-purple-500' },
-  { id: 'manager', label: '管理職', borderColor: 'border-blue-500' },
-  { id: 'engineer', label: 'エンジニア', borderColor: 'border-green-500' },
-  { id: 'sales', label: 'セール・営業', borderColor: 'border-yellow-500' },
-  { id: 'marketing', label: 'マーケティング', borderColor: 'border-red-500' },
-  { id: 'hr', label: '人事・採用', borderColor: 'border-orange-500' },
-];
+// const targets: Target[] = [
+//   { id: 'executive', label: '経営者・役員', borderColor: 'border-purple-500' },
+//   { id: 'manager', label: '管理職', borderColor: 'border-blue-500' },
+//   { id: 'engineer', label: 'エンジニア', borderColor: 'border-green-500' },
+//   { id: 'sales', label: 'セール・営業', borderColor: 'border-yellow-500' },
+//   { id: 'marketing', label: 'マーケティング', borderColor: 'border-red-500' },
+//   { id: 'hr', label: '人事・採用', borderColor: 'border-orange-500' },
+// ];
 
 
 

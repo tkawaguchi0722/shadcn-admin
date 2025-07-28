@@ -36,7 +36,7 @@ export function SnsSuggestRankingCard() {
         <span className="text-xs text-gray-400">00:00 更新</span>
       </CardHeader>
       <CardContent className="space-y-3 pt-0">
-        {rankingData.map((item, idx) => (
+        {rankingData.map((item) => (
           <div key={item.rank} className="flex items-center bg-gray-50 rounded-lg p-3 border border-gray-200">
             <div className="flex flex-col items-center mr-3 min-w-[2.5rem]">
               <span className="text-green-600 font-bold text-lg">{item.rank}位</span>
