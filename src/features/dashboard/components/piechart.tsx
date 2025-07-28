@@ -20,12 +20,12 @@ export  function SimplePieChart() {
         cy="50%" // 中心位置 Y
         labelLine={false}
         innerRadius={60}
-        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+        label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
         outerRadius={120}
         fill="#8884d8"
         dataKey="value"
       >
-        {data.map((entry, index) => (
+        {data.map((_, index) => (
           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
         ))}
       </Pie>
